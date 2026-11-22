@@ -45,13 +45,13 @@ flowchart LR
 
 Registre seu plano aqui antes de editar o código.
 
-- Decisão da camada de apresentação:
-- Decisão da camada de lógica:
-- Decisão da camada de dados:
-- Abordagem para registro de atividades:
-- Abordagem para gerenciamento de equipes:
-- Abordagem para o placar:
-- Abordagem para sugestões de treino:
+- Decisão da camada de apresentação: renderizar estados de carregamento (`role="status"`), vazio e erro (`role="alert"`) em cada rota antes de exibir dados, usando o cliente compartilhado em `api/client.ts`.
+- Decisão da camada de lógica: handlers de rota apenas validam entrada e delegam a `services/octofitService.ts`, que concentra as regras de negócio.
+- Decisão da camada de dados: validações obrigatórias (`required`) nos modelos Mongoose; o seed usa os modelos, sem gravação direta no MongoDB.
+- Abordagem para registro de atividades: validar `userId` e `teamId` como ObjectIds existentes (4xx em caso de falha) antes de calcular `points` e `occurredAt`.
+- Abordagem para gerenciamento de equipes: validar `name` e `mascot` (400 se ausentes) e retornar `201` com `members` populados.
+- Abordagem para o placar: agregar `totalPoints` por equipe a partir das atividades, ordenar em ordem decrescente e atribuir `rank` iniciando em 1.
+- Abordagem para sugestões de treino: derivar o foco da meta da pessoa ou da atividade recente, retornar `reason` e `404` para e-mail desconhecido.
 
 ## Plano de testes
 
@@ -62,3 +62,11 @@ Registre os comandos executados e o significado de cada falha.
 - Testes do frontend: `npm test --prefix octofit-tracker/frontend`
 - Compilação do backend: `npm run build --prefix octofit-tracker/backend`
 - Compilação do frontend: `npm run build --prefix octofit-tracker/frontend`
+
+### Estado inicial registrado
+
+- Dados: 4 falhas de validação (`required` ausente em `User`, `Team`, `Activity` e `Workout`). Inserção idempotente passa.
+- API: 4 falhas. POSTs de atividades e equipes retornam `501` (handlers pendentes), placar vazio sem atividades, e sugestões retornam `strength` em vez de `endurance` para `mona@example.com`.
+- Frontend: 15 falhas. Textos "Implementação pendente" indicam componentes não implementados; faltam estados de carregamento, vazio e erro, renderização de dados e chamada de sugestões por e-mail. Os testes usam `fetch` mockado e não dependem do backend.
+
+Ordem de correção: dados, equipes, atividades, placar, sugestões e, por último, frontend. Cada etapa deve executar os testes correspondentes antes de avançar.
